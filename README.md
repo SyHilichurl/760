@@ -12,3 +12,5 @@ Mao, Y., & Liu, Y. (2023). Pet dog facial expression recognition based on convol
 
 
 Szegedy, C., Vanhoucke, V., Ioffe, S., & Shlens, J. (2015). Rethinking the Inception Architecture for Computer Vision.
+
+CutMix:https://blog.csdn.net/qq_44949041/article/details/129590645
