@@ -65,9 +65,9 @@ transform = transforms.Compose([
 
 # Folder paths our dataset
 folders = [
-    "E:/PyCharm/workspace/archive 2/Sad",
-    "E:/PyCharm/workspace/archive 2/Angry",
-    "E:/PyCharm/workspace/archive 2/happy"
+    "E:/PyCharm/workspace/archive 2/Sad_augmented",
+    "E:/PyCharm/workspace/archive 2/Angry_augmented",
+    "E:/PyCharm/workspace/archive 2/Happy_augmented"
 
 ]
 
@@ -86,7 +86,7 @@ folders = [
 
 # Dataset and DataLoader
 dataset = ExpressionDataset(folders=folders, transform=transform)
-train_size = int(0.8 * len(dataset))
+train_size = int(0.7 * len(dataset))
 test_size = len(dataset) - train_size
 train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
@@ -158,10 +158,10 @@ class SEBlock(nn.Module):
         # Fex操作：经全连接层输出（b，c，1，1）矩阵
         y = self.fc(y).view(b, c, 1, 1)
         # 打印应用SE权重前的通道统计信息
-        print("权重应用前的通道平均值:", x.mean(dim=[2, 3]))
+        # print("权重应用前的通道平均值:", x.mean(dim=[2, 3]))
         # Fscale操作：将得到的权重乘以原来的特征图x
         output = x * y.expand_as(x)
-        print("权重应用后的通道平均值:", output.mean(dim=[2, 3]))
+        # print("权重应用后的通道平均值:", output.mean(dim=[2, 3]))
 
         return output
 
@@ -210,72 +210,72 @@ class GoogLeNetV3(nn.Module):
             self._initialize_weights()
 
     def forward(self, x):
-        print("Input size:", x.size())
+        # print("Input size:", x.size())
         # N x 3 x 299 x 299
         x = self.conv1_1(x)
-        print("After conv1_1 size:", x.size())
+        # print("After conv1_1 size:", x.size())
         # N x 32 x 149 x 149
         x = self.conv1_2(x)
-        print("After conv1_2 size:", x.size())
+        # print("After conv1_2 size:", x.size())
         # N x 32 x 147 x 147
         x = self.conv1_3(x)
-        print("After conv1_3 size:", x.size())
+        # print("After conv1_3 size:", x.size())
         #  N x 32 x 147 x 147
         x = self.maxpool1(x)
-        print("After maxpool1 size:", x.size())
+        # print("After maxpool1 size:", x.size())
         # N x 64 x 73 x 73
         x = self.conv2(x)
-        print("After conv2 size:", x.size())
+        # print("After conv2 size:", x.size())
         # N x 80 x 71 x 71
         x = self.conv3(x)
-        print("After conv3 size:", x.size())
+        # print("After conv3 size:", x.size())
         # N x 192 x 35 x 35
         x = self.conv4(x)
-        print("After conv4 size:", x.size())
+        # print("After conv4 size:", x.size())
         # N x 192 x 35 x 35
         x = self.inception3a(x)
-        print("After inception3a size:", x.size())
+        # print("After inception3a size:", x.size())
         # N x 256 x 35 x 35
         x = self.inception3b(x)
-        print("After inception3b size:", x.size())
+        # print("After inception3b size:", x.size())
         # N x 288 x 35 x 35
         x = self.inception3c(x)
-        print("After inception3c size:", x.size())
+        # print("After inception3c size:", x.size())
         # N x 288 x 35x 35
         x = self.inception4a(x)
-        print("After inception4a size:", x.size())
+        # print("After inception4a size:", x.size())
         # N x 768 x 17 x 17
         x = self.inception4b(x)
-        print("After inception4b size:", x.size())
+        # print("After inception4b size:", x.size())
         # N x 768 x 17 x 17
         x = self.inception4c(x)
-        print("After inception4c size:", x.size())
+        # print("After inception4c size:", x.size())
         # N x 768 x 17 x 17
         x = self.inception4d(x)
-        print("After inception4d size:", x.size())
+        # print("After inception4d size:", x.size())
         # N x 768 x 17 x 17
         if self.training and self.aux_logits:    # eval model lose this layer
             aux = self.aux(x)
-            print("Aux output size:", aux.size())
+            # print("Aux output size:", aux.size())
         # N x 768 x 17 x 17
         x = self.inception4e(x)
-        print("After inception4e size:", x.size())
+        # print("After inception4e size:", x.size())
         # N x 1280 x 8 x 8
         x = self.inception5a(x)
-        print("After inception5a size:", x.size())
+        # print("After inception5a size:", x.size())
         # N x 2048 x 8 x 8
         x = self.inception5b(x)
-        print("After inception5b size:", x.size())
+        # print("After inception5b size:", x.size())
         # N x 2048 x 7 x 7
         x = self.avgpool(x)
-        print("After avgpool size:", x.size())
+        # print("After avgpool size:", x.size())
         # N x 2048 x 1 x 1
         x = torch.flatten(x, 1)
-        print("After flatten size:", x.size())
+        # print("After flatten size:", x.size())
         # N x 1024
         x = self.dropout(x)
         x = self.fc(x)
-        print("Final output size:", x.size())
+        # print("Final output size:", x.size())
         # N x 1000(num_classes)
         if self.training and self.aux_logits:  # 训练阶段使用
             return x, aux
@@ -329,7 +329,7 @@ class InceptionV3A(nn.Module):
         outputs = [branch1, branch2, branch3, branch4]
         outputs = torch.cat(outputs, 1)
         # 应用SE Block
-        print("A Output size before SEBlock:", outputs.size())
+        # print("A Output size before SEBlock:", outputs.size())
         outputs = self.se_block(outputs)
         return outputs
 
@@ -413,7 +413,7 @@ class InceptionV3C(nn.Module):
         outputs = [branch1, branch2, branch3, branch4]
         outputs = torch.cat(outputs, 1)
         # 应用SE Block
-        print("C Output size before SEBlock:", outputs.size())
+        # print("C Output size before SEBlock:", outputs.size())
         outputs = self.se_block(outputs)
         return outputs
 # InceptionV3D:BasicConv2d+MaxPool2d
@@ -453,11 +453,11 @@ class InceptionV3D(nn.Module):
         outputs = torch.cat(outputs, 1)
 
         # 打印输出尺寸，确保它是预期的尺寸
-        print("D Output size before SEBlock:", outputs.size())
+        # print("D Output size before SEBlock:", outputs.size())
 
         # 应用SE Block
         outputs = self.se_block(outputs)
-        print("After SEBlock size:", x.size())
+        # print("After SEBlock size:", x.size())
         return outputs
 
 # 辅助分类器:AvgPool2d+BasicConv2d+Linear+dropout
@@ -519,127 +519,157 @@ import matplotlib.pyplot as plt
 loss_history = []
 accuracy_history = []
 
+# 假设 `dataset` 是你的数据集
+# 定义超参数
 
+from torch.utils.data import DataLoader, SubsetRandomSampler
+from sklearn.model_selection import KFold
 
+num_epochs = 150
+k_folds = 5
+criterion = nn.CrossEntropyLoss()
 
+# 设置设备
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# 定义K折交叉验证
+kfold = KFold(n_splits=k_folds, shuffle=True)
 
-# 训练模型
-num_epochs = 2
+# 获取数据集的索引和标签
+dataset_size = len(dataset)
+indices = list(range(dataset_size))
+labels = [dataset[i][1] for i in range(dataset_size)]
 
-for epoch in range(num_epochs):
-    model.train()  # Set model to training mode
-    running_loss = 0.0
-    correct = 0
-    total = 0
-
-    for inputs, labels in train_loader:
-        inputs, labels = inputs.to(device), labels.to(device)
-
-        optimizer.zero_grad()
-
-        if np.random.rand() < 0.5:  # 例如50%的概率应用CutMix
-            inputs, targets_a, targets_b, lam = cutmix(inputs, labels, alpha=1.0)
-            outputs, aux_outputs = model(inputs)
-            loss1 = criterion(outputs, targets_a) * lam + criterion(outputs, targets_b) * (1 - lam)
-            loss2 = criterion(aux_outputs, targets_a) * lam + criterion(aux_outputs, targets_b) * (1 - lam)
-            print("CutMix applied with lambda:", lam)
-        else:
-            outputs, aux_outputs = model(inputs)
-            loss1 = criterion(outputs, labels)
-            loss2 = criterion(aux_outputs, labels)
-
-
-
-        loss = loss1 + 0.4 * loss2
-
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-        _, predicted = torch.max(outputs, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-    epoch_loss = running_loss / len(train_loader.dataset)
-    epoch_acc = correct / total
-
-    # 存储损失和准确率以供后续绘图
-    loss_history.append(epoch_loss)
-    accuracy_history.append(epoch_acc)
-
-
-    print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss}, Accuracy: {epoch_acc}')
-
-
-# # 评估模型
-# model.eval()  # Set model to evaluation mode
-# correct = 0
-# total = 0
-# with torch.no_grad():
-#     for inputs, labels in test_loader:
-#         inputs, labels = inputs.to(device), labels.to(device)
-#         outputs = model(inputs)
-#         _, predicted = torch.max(outputs.data, 1)
-#         total += labels.size(0)
-#         correct += (predicted == labels).sum().item()
-#
-# print(f'Test Accuracy: {100 * correct / total}%')
-
-# 绘制损失和准确率图表
-plt.figure(figsize=(12, 5))
-
-plt.subplot(1, 2, 1)
-plt.plot(loss_history, label='Loss')
-plt.title('Training Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-
-plt.subplot(1, 2, 2)
-plt.plot(accuracy_history, label='Accuracy')
-plt.title('Training Accuracy')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.legend()
-
-plt.show()
-
-# 评估模型
-model.eval()  # Set model to evaluation mode
-class_correct = list(0. for i in range(3))
-class_total = list(0. for i in range(3))
+# 类别名称
 classes = ['Sad', 'Angry', 'Happy']
 
-# 初始化用于计算总体准确率的变量
-total_correct = 0
-total_samples = 0
+# 存储所有折的准确率
+fold_class_accuracies = {class_name: [] for class_name in classes}
+fold_total_accuracies = []
 
-with torch.no_grad():
-    for inputs, labels in test_loader:
-        inputs, labels = inputs.to(device), labels.to(device)
-        outputs = model(inputs)
-        _, predicted = torch.max(outputs, 1)
-        c = (predicted == labels).squeeze()
+# K折交叉验证
+for fold, (train_ids, val_ids) in enumerate(kfold.split(indices, labels)):
+    print(f'FOLD {fold}')
+    print('--------------------------------')
 
-        # 更新总体正确预测和总样本数
-        total_correct += (predicted == labels).sum().item()
-        total_samples += labels.size(0)
+    # 创建数据加载器
+    train_subsampler = SubsetRandomSampler(train_ids)
+    val_subsampler = SubsetRandomSampler(val_ids)
+    train_loader = DataLoader(dataset, batch_size=32, sampler=train_subsampler)
+    val_loader = DataLoader(dataset, batch_size=32, sampler=val_subsampler)
 
-        for i in range(len(labels)):
-            label = labels[i]
-            class_correct[label] += c[i].item()
-            class_total[label] += 1
+    # 初始化模型
+    model = GoogLeNetV3(num_classes=3, aux_logits=True, init_weights=True).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# 打印每个类别的准确率
-for i in range(3):
-    print('Accuracy of %5s : %2d %%' % (
-        classes[i], 100 * class_correct[i] / class_total[i]))
+    # 初始化列表存储损失和准确率
+    loss_history = []
+    accuracy_history = []
 
-# 计算总体准确率并打印
-total_accuracy = 100 * total_correct / total_samples
-print(f'Total accuracy: {total_accuracy:.2f}%')
+    # 训练模型
+    for epoch in range(num_epochs):
+        model.train()  # 设置模型为训练模式
+        running_loss = 0.0
+        correct = 0
+        total = 0
 
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
 
-#保存模型
+            optimizer.zero_grad()
+
+            if np.random.rand() < 0.5:  # 例如50%的概率应用CutMix
+                inputs, targets_a, targets_b, lam = cutmix(inputs, labels, alpha=1.0)
+                outputs, aux_outputs = model(inputs)
+                loss1 = criterion(outputs, targets_a) * lam + criterion(outputs, targets_b) * (1 - lam)
+                loss2 = criterion(aux_outputs, targets_a) * lam + criterion(aux_outputs, targets_b) * (1 - lam)
+            else:
+                outputs, aux_outputs = model(inputs)
+                loss1 = criterion(outputs, labels)
+                loss2 = criterion(aux_outputs, labels)
+
+            loss = loss1 + 0.4 * loss2
+
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+        epoch_loss = running_loss / len(train_loader.dataset)
+        epoch_acc = correct / total
+
+        # 存储损失和准确率以供后续绘图
+        loss_history.append(epoch_loss)
+        accuracy_history.append(epoch_acc)
+
+        print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss}, Accuracy: {epoch_acc}')
+
+    # 绘制损失和准确率图表
+    plt.figure(figsize=(12, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(loss_history, label='Loss')
+    plt.title('Training Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.ylim([0, 0.06])  # 设置y轴的范围
+
+    plt.subplot(1, 2, 2)
+    plt.plot(accuracy_history, label='Accuracy')
+    plt.title('Training Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    plt.show()
+
+    # 评估模型
+    model.eval()  # 设置模型为评估模式
+    class_correct = list(0. for i in range(3))
+    class_total = list(0. for i in range(3))
+    total_correct = 0
+    total_samples = 0
+    with torch.no_grad():
+        for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs, 1)
+            c = (predicted == labels).squeeze()
+
+            total_correct += (predicted == labels).sum().item()
+            total_samples += labels.size(0)
+
+            for i in range(len(labels)):
+                label = labels[i]
+                class_correct[label] += c[i].item()
+                class_total[label] += 1
+
+    # 打印每个类别的准确率
+    for i in range(3):
+        accuracy = 100 * class_correct[i] / class_total[i]
+        fold_class_accuracies[classes[i]].append(accuracy)
+        print(f'Accuracy of {classes[i]:5s} : {accuracy:.2f} %')
+
+    # 计算总体准确率并打印
+    val_accuracy = 100 * total_correct / total_samples
+    fold_total_accuracies.append(val_accuracy)
+    print(f'Total accuracy: {val_accuracy:.2f}%')
+    print('--------------------------------')
+
+# 输出所有折的平均准确率和标准差
+print(f'K-Fold Cross-Validation results:')
+for class_name in classes:
+    avg_accuracy = np.mean(fold_class_accuracies[class_name])
+    std_accuracy = np.std(fold_class_accuracies[class_name])
+    print(f'{class_name} Accuracy: {avg_accuracy:.2f} % ± {std_accuracy:.2f} %')
+
+avg_total_accuracy = np.mean(fold_total_accuracies)
+std_total_accuracy = np.std(fold_total_accuracies)
+print(f'Total Accuracy: {avg_total_accuracy:.2f} % ± {std_total_accuracy:.2f} %')
+
+# 保存模型
 torch.save(model.state_dict(), 'facial_expression_model.pth')
