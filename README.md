@@ -15,6 +15,17 @@ with_cutmix_and_se()use CV).py is the final model fro our study.
 
 The remaining Python files incrementally add various techniques to the baseline model until reaching the final model.（With techniques as it's name）
 
+
+
+
+Each model code includes the complete process of reading data, building the model, training the model, and evaluating the model.
+
+
+
+test for new one picture.py is you can ues this code to test the model on new picture,
+
+
+
 ## Reference
 GoogLeNet(InceptionV3) website : https://blog.csdn.net/yangyu0515/article/details/134371005
 
