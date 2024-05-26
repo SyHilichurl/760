@@ -1,4 +1,13 @@
 # 760
+
+## How to use the Code
+
+v3.py is the InceptionV3 model from website.(website in Reference)
+baseline.py  It is the baseline model for just InceptionV3.We get a base InceptionV3 model from website.And change it to fit our experiment.
+with_cutmix_and_se()use CV).py is the final model fro our study.
+
+The remaining Python files incrementally add various techniques to the baseline model until reaching the final model.（With techniques as it's name）
+
 ## Reference
 GoogLeNet(InceptionV3) website : https://blog.csdn.net/yangyu0515/article/details/134371005
 
