@@ -11,19 +11,17 @@ baseline.py  It is the baseline model for just InceptionV3.We get a base Incepti
 with_cutmix_and_se(use CV).py is the final model fro our study.
 
 
-
-
 The remaining Python files incrementally add various techniques to the baseline model until reaching the final model.（With techniques as it's name）
-
-
 
 
 Each model code includes the complete process of reading data, building the model, training the model, and evaluating the model.
 
 
+test for new one picture.py is you can ues this code to test the model on new picture.
 
-test for new one picture.py is you can ues this code to test the model on new picture,
+Rotation.ipynb shows how we've done the rotation augmentation.
 
+Dataset: zip file of cats facial expressions without aug includes the images data that augumented by rotation.
 
 
 ## Reference
