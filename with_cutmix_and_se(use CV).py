@@ -10,10 +10,6 @@ from torchvision import transforms
 import torch.optim as optim
 
 
-
-
-
-# 数据加载和预处理
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
@@ -150,18 +146,12 @@ class SEBlock(nn.Module):
 
 
     def forward(self, x):
-        # 读取批数据图片数量及通道数
         b, c, h, w = x.size()
-
-        # Fsq操作：经池化后输出b*c的矩阵
         y = self.gap(x).view(b, c)
-        # Fex操作：经全连接层输出（b，c，1，1）矩阵
+        
         y = self.fc(y).view(b, c, 1, 1)
-        # 打印应用SE权重前的通道统计信息
-        # print("权重应用前的通道平均值:", x.mean(dim=[2, 3]))
-        # Fscale操作：将得到的权重乘以原来的特征图x
+        
         output = x * y.expand_as(x)
-        # print("权重应用后的通道平均值:", output.mean(dim=[2, 3]))
 
         return output
 
@@ -502,25 +492,17 @@ if __name__ == '__main__':
     model = GoogLeNetV3().to(device)
     summary(model, input_size=(3, 299, 299))
 
-
-# 之后的步骤
-# 设置设备
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = GoogLeNetV3(num_classes=3, aux_logits=True, init_weights=True).to(device)
 
-# 定义损失函数和优化器
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 import matplotlib.pyplot as plt
 
-# 在训练循环外初始化存储损失和准确率的列表
 loss_history = []
 accuracy_history = []
-
-# 假设 `dataset` 是你的数据集
-# 定义超参数
 
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from sklearn.model_selection import KFold
@@ -529,46 +511,37 @@ num_epochs = 150
 k_folds = 5
 criterion = nn.CrossEntropyLoss()
 
-# 设置设备
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 定义K折交叉验证
 kfold = KFold(n_splits=k_folds, shuffle=True)
 
-# 获取数据集的索引和标签
 dataset_size = len(dataset)
 indices = list(range(dataset_size))
 labels = [dataset[i][1] for i in range(dataset_size)]
 
-# 类别名称
 classes = ['Sad', 'Angry', 'Happy']
 
-# 存储所有折的准确率
 fold_class_accuracies = {class_name: [] for class_name in classes}
 fold_total_accuracies = []
 
-# K折交叉验证
 for fold, (train_ids, val_ids) in enumerate(kfold.split(indices, labels)):
     print(f'FOLD {fold}')
     print('--------------------------------')
 
-    # 创建数据加载器
     train_subsampler = SubsetRandomSampler(train_ids)
     val_subsampler = SubsetRandomSampler(val_ids)
     train_loader = DataLoader(dataset, batch_size=32, sampler=train_subsampler)
     val_loader = DataLoader(dataset, batch_size=32, sampler=val_subsampler)
 
-    # 初始化模型
     model = GoogLeNetV3(num_classes=3, aux_logits=True, init_weights=True).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    # 初始化列表存储损失和准确率
+   
     loss_history = []
     accuracy_history = []
 
-    # 训练模型
     for epoch in range(num_epochs):
-        model.train()  # 设置模型为训练模式
+        model.train()  
         running_loss = 0.0
         correct = 0
         total = 0
@@ -601,13 +574,13 @@ for fold, (train_ids, val_ids) in enumerate(kfold.split(indices, labels)):
         epoch_loss = running_loss / len(train_loader.dataset)
         epoch_acc = correct / total
 
-        # 存储损失和准确率以供后续绘图
+       
         loss_history.append(epoch_loss)
         accuracy_history.append(epoch_acc)
 
         print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss}, Accuracy: {epoch_acc}')
 
-    # 绘制损失和准确率图表
+ 
     plt.figure(figsize=(12, 5))
 
     plt.subplot(1, 2, 1)
@@ -616,7 +589,7 @@ for fold, (train_ids, val_ids) in enumerate(kfold.split(indices, labels)):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.ylim([0, 0.06])  # 设置y轴的范围
+    plt.ylim([0, 0.06])  
 
     plt.subplot(1, 2, 2)
     plt.plot(accuracy_history, label='Accuracy')
@@ -627,7 +600,7 @@ for fold, (train_ids, val_ids) in enumerate(kfold.split(indices, labels)):
 
     plt.show()
 
-    # 评估模型
+
     model.eval()  # 设置模型为评估模式
     class_correct = list(0. for i in range(3))
     class_total = list(0. for i in range(3))
@@ -648,19 +621,18 @@ for fold, (train_ids, val_ids) in enumerate(kfold.split(indices, labels)):
                 class_correct[label] += c[i].item()
                 class_total[label] += 1
 
-    # 打印每个类别的准确率
     for i in range(3):
         accuracy = 100 * class_correct[i] / class_total[i]
         fold_class_accuracies[classes[i]].append(accuracy)
         print(f'Accuracy of {classes[i]:5s} : {accuracy:.2f} %')
 
-    # 计算总体准确率并打印
+
     val_accuracy = 100 * total_correct / total_samples
     fold_total_accuracies.append(val_accuracy)
     print(f'Total accuracy: {val_accuracy:.2f}%')
     print('--------------------------------')
 
-# 输出所有折的平均准确率和标准差
+
 print(f'K-Fold Cross-Validation results:')
 for class_name in classes:
     avg_accuracy = np.mean(fold_class_accuracies[class_name])
