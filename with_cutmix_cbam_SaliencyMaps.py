@@ -6,7 +6,6 @@ import torch.nn as nn
 from torchsummary import summary
 import torch.optim as optim
 
-# 数据加载和预处理
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
@@ -111,9 +110,7 @@ def rand_bbox(size, lam):
 class SEBlock(nn.Module):
     def __init__(self, inchannel, ratio=16):
         super(SEBlock, self).__init__()
-        # 全局平均池化(Fsq操作)
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
-        # 两个全连接层(Fex操作)
         self.fc = nn.Sequential(
             nn.Linear(inchannel, inchannel // ratio, bias=False),  # 从 c -> c/r
             nn.ReLU(),
@@ -122,22 +119,16 @@ class SEBlock(nn.Module):
         )
 
     def forward(self, x):
-        # 读取批数据图片数量及通道数
         b, c, h, w = x.size()
 
-        # Fsq操作：经池化后输出b*c的矩阵
         y = self.gap(x).view(b, c)
-        # Fex操作：经全连接层输出（b，c，1，1）矩阵
+        
         y = self.fc(y).view(b, c, 1, 1)
-        # 打印应用SE权重前的通道统计信息
-        # print("权重应用前的通道平均值:", x.mean(dim=[2, 3]))
-        # Fscale操作：将得到的权重乘以原来的特征图x
+        
         output = x * y.expand_as(x)
-        # print("权重应用后的通道平均值:", output.mean(dim=[2, 3]))
-
         return output
 
-# 一点点改动 channel+spatial
+# channel+spatial
 class ChannelAttention(nn.Module):
     def __init__(self, in_planes, ratio=16):
         super(ChannelAttention, self).__init__()
@@ -330,13 +321,8 @@ class InceptionV3A(nn.Module):
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
-        # 拼接
         outputs = [branch1, branch2, branch3, branch4]
         outputs = torch.cat(outputs, 1)
-        # 应用SE Block
-        # print("A Output size before SEBlock:", outputs.size())
-        # outputs = self.se_block(outputs)
-        # 一点点改动
         outputs = self.ca(outputs) * outputs
         outputs = self.sa(outputs) * outputs
         return outputs
@@ -346,29 +332,27 @@ class InceptionV3A(nn.Module):
 class InceptionV3B(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch3x3redX2, ch3x3X2, pool_proj):
         super(InceptionV3B, self).__init__()
-        # 1×1卷积
         self.branch1 = BasicConv2d(in_channels, ch1x1, kernel_size=1)
-        # 1×1卷积+1×3卷积+3×1卷积
         self.branch2 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3red, kernel_size=1),
             BasicConv2d(ch3x3red, ch3x3, kernel_size=[1, 3], padding=[0, 1]),
-            BasicConv2d(ch3x3, ch3x3, kernel_size=[3, 1], padding=[1, 0])  # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3, ch3x3, kernel_size=[3, 1], padding=[1, 0]) 
         )
-        # 1×1卷积+1×3卷积+3×1卷积+1×3卷积+3×1卷积
+       
         self.branch3 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3redX2, kernel_size=1),
             BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=[1, 3], padding=[0, 1]),
             BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0]),
             BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[1, 3], padding=[0, 1]),
-            BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0])  # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0]) 
         )
-        # 3×3池化+1×1卷积
+        
         self.branch4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
             BasicConv2d(in_channels, pool_proj, kernel_size=1)
         )
 
-        # 计算总通道数以配置SE Block
+       
         total_channels = ch1x1 + ch3x3 + ch3x3X2 + pool_proj
         # self.se_block = SEBlock(total_channels)
         # 一点点改动
@@ -380,7 +364,6 @@ class InceptionV3B(nn.Module):
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
-        # 拼接
         outputs = [branch1, branch2, branch3, branch4]
         outputs = torch.cat(outputs, 1)
         # 应用SE Block
@@ -395,14 +378,11 @@ class InceptionV3B(nn.Module):
 class InceptionV3C(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch3x3redX2, ch3x3X2, pool_proj):
         super(InceptionV3C, self).__init__()
-        # 1×1卷积
         self.branch1 = BasicConv2d(in_channels, ch1x1, kernel_size=1)
-        # 1×1卷积+1×3卷积+3×1卷积
         self.branch2_0 = BasicConv2d(in_channels, ch3x3red, kernel_size=1)
         self.branch2_1 = BasicConv2d(ch3x3red, ch3x3, kernel_size=[1, 3], padding=[0, 1])
         self.branch2_2 = BasicConv2d(ch3x3red, ch3x3, kernel_size=[3, 1], padding=[1, 0])
 
-        # 1×1卷积+3×3卷积+1×3卷积+3×1卷积
         self.branch3_0 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3redX2, kernel_size=1),
             BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=3, padding=1),
@@ -410,7 +390,6 @@ class InceptionV3C(nn.Module):
         self.branch3_1 = BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[1, 3], padding=[0, 1])
         self.branch3_2 = BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0])
 
-        # 3×3池化+1×1卷积
         self.branch4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
             BasicConv2d(in_channels, pool_proj, kernel_size=1)
@@ -476,20 +455,13 @@ class InceptionV3D(nn.Module):
         # 拼接
         outputs = [branch1, branch2, branch3]
         outputs = torch.cat(outputs, 1)
-
-        # 打印输出尺寸，确保它是预期的尺寸
-        # print("D Output size before SEBlock:", outputs.size())
-
-        # 应用SE Block
-        # outputs = self.se_block(outputs)
-        # 一点点改动
         outputs = self.ca(outputs) * outputs
         outputs = self.sa(outputs) * outputs
         # print("After SEBlock size:", x.size())
         return outputs
 
 
-# 辅助分类器:AvgPool2d+BasicConv2d+Linear+dropout
+# AvgPool2d+BasicConv2d+Linear+dropout
 class InceptionAux(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(InceptionAux, self).__init__()
@@ -535,26 +507,19 @@ if __name__ == '__main__':
     model = GoogLeNetV3().to(device)
     summary(model, input_size=(3, 299, 299))
 
-# 之后的步骤
-# 设置设备
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = GoogLeNetV3(num_classes=3, aux_logits=True, init_weights=True).to(device)
 
-
-
-# 定义损失函数和优化器
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
 import matplotlib.pyplot as plt
 
-# 在训练循环外初始化存储损失和准确率的列表
 loss_history = []
 accuracy_history = []
 
-# 训练模型
 num_epochs = 2
 
 for epoch in range(num_epochs):
@@ -592,13 +557,11 @@ for epoch in range(num_epochs):
     epoch_loss = running_loss / len(train_loader.dataset)
     epoch_acc = correct / total
 
-    # 存储损失和准确率以供后续绘图
     loss_history.append(epoch_loss)
     accuracy_history.append(epoch_acc)
 
     print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss}, Accuracy: {epoch_acc}')
 
-# # 评估模型
 # model.eval()  # Set model to evaluation mode
 # correct = 0
 # total = 0
@@ -612,7 +575,7 @@ for epoch in range(num_epochs):
 #
 # print(f'Test Accuracy: {100 * correct / total}%')
 
-# 绘制损失和准确率图表
+
 # plt.figure(figsize=(12, 5))
 #
 # plt.subplot(1, 2, 1)
@@ -631,13 +594,13 @@ for epoch in range(num_epochs):
 #
 # plt.show()
 
-# 评估模型
+
 model.eval()  # Set model to evaluation mode
 class_correct = list(0. for i in range(3))
 class_total = list(0. for i in range(3))
 classes = ['Sad', 'Angry', 'Happy']
 
-# 初始化用于计算总体准确率的变量
+
 total_correct = 0
 total_samples = 0
 
@@ -648,7 +611,6 @@ with torch.no_grad():
         _, predicted = torch.max(outputs, 1)
         c = (predicted == labels).squeeze()
 
-        # 更新总体正确预测和总样本数
         total_correct += (predicted == labels).sum().item()
         total_samples += labels.size(0)
 
@@ -657,16 +619,14 @@ with torch.no_grad():
             class_correct[label] += c[i].item()
             class_total[label] += 1
 
-# 打印每个类别的准确率
 for i in range(3):
     print('Accuracy of %5s : %2d %%' % (
         classes[i], 100 * class_correct[i] / class_total[i]))
 
-# 计算总体准确率并打印
+
 total_accuracy = 100 * total_correct / total_samples
 print(f'Total accuracy: {total_accuracy:.2f}%')
 
-# 保存模型
 torch.save(model.state_dict(), 'facial_expression_model.pth')
 
 # Ensure the device setting
