@@ -4,16 +4,17 @@ from torchsummary import summary
 
 
 
+# CNN with Inception-v3 Architecture
 
 class GoogLeNetV3(nn.Module):
     def __init__(self, num_classes=3, aux_logits=True, init_weights=False):
         super(GoogLeNetV3, self).__init__()
         self.aux_logits = aux_logits
-        # 3个3×3卷积替代7×7卷积
+        # Replace the 7×7 convolution with three 3×3 convolutions
         self.conv1_1 = BasicConv2d(3, 32, kernel_size=3, stride=2)
         self.conv1_2 = BasicConv2d(32, 32, kernel_size=3, stride=1)
         self.conv1_3 = BasicConv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        # 池化层
+        # Pooling layer
         self.maxpool1 = nn.MaxPool2d(3, stride=2, ceil_mode=True)
 
         self.conv2 = BasicConv2d(64, 80, kernel_size=3)
@@ -49,7 +50,7 @@ class GoogLeNetV3(nn.Module):
         x = self.conv1_2(x)
         # N x 32 x 147 x 147
         x = self.conv1_3(x)
-        #  N x 32 x 147 x 147
+        # N x 32 x 147 x 147
         x = self.maxpool1(x)
         # N x 64 x 73 x 73
         x = self.conv2(x)
@@ -63,7 +64,7 @@ class GoogLeNetV3(nn.Module):
         x = self.inception3b(x)
         # N x 288 x 35 x 35
         x = self.inception3c(x)
-        # N x 288 x 35x 35
+        # N x 288 x 35 x 35
         x = self.inception4a(x)
         # N x 768 x 17 x 17
         x = self.inception4b(x)
@@ -72,7 +73,7 @@ class GoogLeNetV3(nn.Module):
         # N x 768 x 17 x 17
         x = self.inception4d(x)
         # N x 768 x 17 x 17
-        if self.training and self.aux_logits:    # eval model lose this layer
+        if self.training and self.aux_logits:  # eval model lose this layer
             aux = self.aux(x)
         # N x 768 x 17 x 17
         x = self.inception4e(x)
@@ -87,11 +88,12 @@ class GoogLeNetV3(nn.Module):
         # N x 1024
         x = self.dropout(x)
         x = self.fc(x)
-        # N x 1000(num_classes)
-        if self.training and self.aux_logits:  # 训练阶段使用
+        # N x 1000 (num_classes)
+        if self.training and self.aux_logits:  # Used during training
             return x, aux
         return x
-    # 对模型的权重进行初始化操作
+
+    # Initialize model weights
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -102,24 +104,24 @@ class GoogLeNetV3(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
-# InceptionV3A:BasicConv2d+MaxPool2d
+# InceptionV3A: BasicConv2d + MaxPool2d
 class InceptionV3A(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch3x3redX2, ch3x3X2, pool_proj):
         super(InceptionV3A, self).__init__()
-        # 1×1卷积
+        # 1×1 convolution
         self.branch1 = BasicConv2d(in_channels, ch1x1, kernel_size=1)
-        # 1×1卷积+3×3卷积
+        # 1×1 convolution + 3×3 convolution
         self.branch2 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3red, kernel_size=1),
-            BasicConv2d(ch3x3red, ch3x3, kernel_size=3, padding=1)   # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3red, ch3x3, kernel_size=3, padding=1)  # Ensure output size equals input size
         )
-        # 1×1卷积++3×3卷积+3×3卷积
+        # 1×1 convolution + 3×3 convolution + 3×3 convolution
         self.branch3 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3redX2, kernel_size=1),
             BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=3, padding=1),
-            BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=3, padding=1)         # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=3, padding=1)  # Ensure output size equals input size
         )
-        # 3×3池化+1×1卷积
+        # 3×3 pooling + 1×1 convolution
         self.branch4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
             BasicConv2d(in_channels, pool_proj, kernel_size=1)
@@ -129,31 +131,31 @@ class InceptionV3A(nn.Module):
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
-        # 拼接
+        # Concatenate
         outputs = [branch1, branch2, branch3, branch4]
         return torch.cat(outputs, 1)
 
-# InceptionV3B:BasicConv2d+MaxPool2d
+# InceptionV3B: BasicConv2d + MaxPool2d
 class InceptionV3B(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch3x3redX2, ch3x3X2, pool_proj):
         super(InceptionV3B, self).__init__()
-        # 1×1卷积
+        # 1×1 convolution
         self.branch1 = BasicConv2d(in_channels, ch1x1, kernel_size=1)
-        # 1×1卷积+1×3卷积+3×1卷积
+        # 1×1 convolution + 1×3 convolution + 3×1 convolution
         self.branch2 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3red, kernel_size=1),
             BasicConv2d(ch3x3red, ch3x3, kernel_size=[1, 3], padding=[0, 1]),
-            BasicConv2d(ch3x3, ch3x3, kernel_size=[3, 1], padding=[1, 0])   # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3, ch3x3, kernel_size=[3, 1], padding=[1, 0])  # Ensure output size equals input size
         )
-        # 1×1卷积+1×3卷积+3×1卷积+1×3卷积+3×1卷积
+        # 1×1 convolution + 1×3 convolution + 3×1 convolution + 1×3 convolution + 3×1 convolution
         self.branch3 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3redX2, kernel_size=1),
             BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=[1, 3], padding=[0, 1]),
             BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0]),
             BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[1, 3], padding=[0, 1]),
-            BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0])  # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0])  # Ensure output size equals input size
         )
-        # 3×3池化+1×1卷积
+        # 3×3 pooling + 1×1 convolution
         self.branch4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
             BasicConv2d(in_channels, pool_proj, kernel_size=1)
@@ -163,22 +165,22 @@ class InceptionV3B(nn.Module):
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
         branch4 = self.branch4(x)
-        # 拼接
+        # Concatenate
         outputs = [branch1, branch2, branch3, branch4]
         return torch.cat(outputs, 1)
 
-# InceptionV3C:BasicConv2d+MaxPool2d
+# InceptionV3C: BasicConv2d + MaxPool2d
 class InceptionV3C(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch3x3redX2, ch3x3X2, pool_proj):
         super(InceptionV3C, self).__init__()
-        # 1×1卷积
+        # 1×1 convolution
         self.branch1 = BasicConv2d(in_channels, ch1x1, kernel_size=1)
-        # 1×1卷积+1×3卷积+3×1卷积
+        # 1×1 convolution + 1×3 convolution + 3×1 convolution
         self.branch2_0 = BasicConv2d(in_channels, ch3x3red, kernel_size=1)
         self.branch2_1 = BasicConv2d(ch3x3red, ch3x3, kernel_size=[1, 3], padding=[0, 1])
         self.branch2_2 = BasicConv2d(ch3x3red, ch3x3, kernel_size=[3, 1], padding=[1, 0])
 
-        # 1×1卷积+3×3卷积+1×3卷积+3×1卷积
+        # 1×1 convolution + 3×3 convolution + 1×3 convolution + 3×1 convolution
         self.branch3_0 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3redX2, kernel_size=1),
             BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=3, padding=1),
@@ -186,7 +188,7 @@ class InceptionV3C(nn.Module):
         self.branch3_1 = BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[1, 3], padding=[0, 1])
         self.branch3_2 = BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=[3, 1], padding=[1, 0])
 
-        # 3×3池化+1×1卷积
+        # 3×3 pooling + 1×1 convolution
         self.branch4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
             BasicConv2d(in_channels, pool_proj, kernel_size=1)
@@ -198,39 +200,39 @@ class InceptionV3C(nn.Module):
         branch3_0 = self.branch3_0(x)
         branch3 = torch.cat([self.branch3_1(branch3_0), self.branch3_2(branch3_0)], dim=1)
         branch4 = self.branch4(x)
-        # 拼接
+        # Concatenate
         outputs = [branch1, branch2, branch3, branch4]
         return torch.cat(outputs, 1)
 
-# InceptionV3D:BasicConv2d+MaxPool2d
+# InceptionV3D: BasicConv2d + MaxPool2d
 class InceptionV3D(nn.Module):
     def __init__(self, in_channels, ch1x1, ch3x3red, ch3x3, ch3x3redX2, ch3x3X2, pool_proj):
         super(InceptionV3D, self).__init__()
-        # ch1x1:没有1×1卷积
-        # 1×1卷积+3×3卷积,步长为2
+        # ch1x1: No 1×1 convolution
+        # 1×1 convolution + 3×3 convolution with stride 2
         self.branch1 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3red, kernel_size=1),
             BasicConv2d(ch3x3red, ch3x3, kernel_size=3, stride=2)
         )
-        # 1×1卷积+3×3卷积+3×3卷积,步长为2
+        # 1×1 convolution + 3×3 convolution + 3×3 convolution with stride 2
         self.branch2 = nn.Sequential(
             BasicConv2d(in_channels, ch3x3redX2, kernel_size=1),
-            BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=3, padding=1),   # 保证输出大小等于输入大小
+            BasicConv2d(ch3x3redX2, ch3x3X2, kernel_size=3, padding=1),  # Ensure output size equals input size
             BasicConv2d(ch3x3X2, ch3x3X2, kernel_size=3, stride=2)
         )
-        # 3×3池化,步长为2
+        # 3×3 pooling with stride 2
         self.branch3 = nn.Sequential(nn.MaxPool2d(kernel_size=3, stride=2))
-        # pool_proj:池化层后不再接卷积层
+        # pool_proj: No convolution layer after pooling layer
 
     def forward(self, x):
         branch1 = self.branch1(x)
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
-        # 拼接
-        outputs = [branch1,branch2, branch3]
+        # Concatenate
+        outputs = [branch1, branch2, branch3]
         return torch.cat(outputs, 1)
 
-# 辅助分类器:AvgPool2d+BasicConv2d+Linear+dropout
+# Auxiliary classifier: AvgPool2d + BasicConv2d + Linear + dropout
 class InceptionAux(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(InceptionAux, self).__init__()
@@ -254,7 +256,7 @@ class InceptionAux(nn.Module):
         # N x num_classes
         return out
 
-# 卷积组: Conv2d+BN+ReLU
+# Convolutional block: Conv2d + BN + ReLU
 class BasicConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
         super(BasicConv2d, self).__init__()
@@ -266,6 +268,7 @@ class BasicConv2d(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         return x
+
 
 if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
